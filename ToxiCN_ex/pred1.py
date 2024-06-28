@@ -4,6 +4,7 @@ from transformers import AutoTokenizer
 from src.datasets import *
 from src.Models import *
 from model.Config_base import Config_base
+import pandas as pd
 
 
 # dataset = 'TOC'  # 数据集
@@ -21,8 +22,8 @@ tokenizer = AutoTokenizer.from_pretrained(config.model_path)
 bert_layer = Bert_Layer(config).to(config.device)
 two_layer_ffnn = TwoLayerFFNNLayer(config).to(config.device)
 
-# 加载模型权重，这里需要您提供具体的路径
-checkpoint_path = '/data/coding/ToxinCN-main/ToxiCN_ex/ToxiCN/saved_dict/ckp-hfl_chinese-roberta-wwm-ext-NN_ML-80_D-0.5_B-32_E-5_Lr-1e-05_aplha-0.5-BEST.tar'  # 请替换为实际的检查点文件路径
+# 加载模型权重，使用检查点模型
+checkpoint_path = '/data/coding/ToxinCN-main/ToxiCN_ex/ToxiCN/saved_dict/ckp-hfl_chinese-roberta-wwm-ext-NN_ML-80_D-0.5_B-32_E-5_Lr-1e-05_aplha-0.5-BEST.tar' 
 checkpoint = torch.load(checkpoint_path)
 bert_layer.load_state_dict(checkpoint['embed_model_state_dict'])
 two_layer_ffnn.load_state_dict(checkpoint['model_state_dict'])
@@ -32,8 +33,7 @@ bert_layer.eval()
 two_layer_ffnn.eval()
 
 # 创建数据集实例并执行预处理
-# 这里假设您想要预测的数据集路径为'path_to_pred_data.csv'
-pred_data_path = '/data/coding/ToxinCN-main/ToxiCN_ex/ToxiCN/data/test.json'  # 请替换为实际的预测数据集路径
+pred_data_path = '/data/coding/ToxinCN-main/ToxiCN_ex/ToxiCN/data/test.json'
 dataset_class = Datasets(config, pred_data_path, add_special_tokens=True, not_test=False)
 dataset_class.preprocess_data()
 
@@ -55,15 +55,12 @@ def predict(dataloader, bert_layer, two_layer_ffnn):
 
 # 执行预测并获取结果
 predictions = predict(dataloader, bert_layer, two_layer_ffnn)
-
-# 假设原始数据框df已经加载了预测数据集'path_to_pred_data.csv'
-import pandas as pd
 df = pd.read_csv(pred_data_path)
 
 # 将预测结果添加到数据框中
 df['predictions'] = predictions
 
 # 保存预测结果到CSV
-predictions_output_path = 'path_to_save_predictions.csv'  # 请替换为希望保存的预测结果路径
+predictions_output_path = '/data/coding/ToxinCN-main/ToxiCN_ex/ToxiCN/saved_dict'
 df.to_csv(predictions_output_path, index=False)
 print(f"Predictions have been saved to {predictions_output_path}")
